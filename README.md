@@ -39,10 +39,10 @@ A proxy server that exposes an **Anthropic-compatible API** backed by **Antigrav
 
 ```bash
 # Run directly with npx (no install needed)
-npx antigravity-claude-proxy start
+npx antigravity-claude-proxy@latest start
 
 # Or install globally
-npm install -g antigravity-claude-proxy
+npm install -g antigravity-claude-proxy@latest
 antigravity-claude-proxy start
 ```
 
@@ -78,7 +78,7 @@ Add one or more Google accounts for load balancing.
 antigravity-claude-proxy accounts add
 
 # If using npx
-npx antigravity-claude-proxy accounts add
+npx antigravity-claude-proxy@latest accounts add
 
 # If cloned locally
 npm run accounts:add
@@ -93,7 +93,7 @@ This opens your browser for Google OAuth. Sign in and authorize access. Repeat f
 antigravity-claude-proxy accounts add --no-browser
 
 # If using npx
-npx antigravity-claude-proxy accounts add -- --no-browser
+npx antigravity-claude-proxy@latest accounts add -- --no-browser
 
 # If cloned locally
 npm run accounts:add -- --no-browser
@@ -121,7 +121,7 @@ antigravity-claude-proxy accounts
 antigravity-claude-proxy start
 
 # If using npx
-npx antigravity-claude-proxy start
+npx antigravity-claude-proxy@latest start
 
 # If cloned locally
 npm start
