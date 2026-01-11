@@ -297,8 +297,8 @@ window.DashboardCharts.updateCharts = function (component) {
            title: { display: false },
          },
          animation: {
-           animateScale: true,
-           animateRotate: true,
+           // Disable animation for quota chart to prevent "double refresh" visual glitch
+           duration: 0
          },
        },
     });
