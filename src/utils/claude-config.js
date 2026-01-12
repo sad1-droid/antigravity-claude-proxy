@@ -138,3 +138,139 @@ function deepMerge(target, source) {
 function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
+
+// ==========================================
+// Claude CLI Presets
+// ==========================================
+
+/**
+ * Default presets based on README examples
+ */
+const DEFAULT_PRESETS = [
+    {
+        name: 'Claude Thinking',
+        config: {
+            ANTHROPIC_AUTH_TOKEN: 'test',
+            ANTHROPIC_BASE_URL: 'http://localhost:8080',
+            ANTHROPIC_MODEL: 'claude-opus-4-5-thinking',
+            ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-4-5-thinking',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-4-5-thinking',
+            ANTHROPIC_DEFAULT_HAIKU_MODEL: 'gemini-2.5-flash-lite[1m]',
+            CLAUDE_CODE_SUBAGENT_MODEL: 'claude-sonnet-4-5-thinking',
+            ENABLE_EXPERIMENTAL_MCP_CLI: 'true'
+        }
+    },
+    {
+        name: 'Gemini 1M',
+        config: {
+            ANTHROPIC_AUTH_TOKEN: 'test',
+            ANTHROPIC_BASE_URL: 'http://localhost:8080',
+            ANTHROPIC_MODEL: 'gemini-3-pro-high[1m]',
+            ANTHROPIC_DEFAULT_OPUS_MODEL: 'gemini-3-pro-high[1m]',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'gemini-3-flash[1m]',
+            ANTHROPIC_DEFAULT_HAIKU_MODEL: 'gemini-2.5-flash-lite[1m]',
+            CLAUDE_CODE_SUBAGENT_MODEL: 'gemini-3-flash[1m]',
+            ENABLE_EXPERIMENTAL_MCP_CLI: 'true'
+        }
+    }
+];
+
+/**
+ * Get the path to the presets file
+ * @returns {string} Absolute path to claude-presets.json
+ */
+export function getPresetsPath() {
+    return path.join(os.homedir(), '.config', 'antigravity-proxy', 'claude-presets.json');
+}
+
+/**
+ * Read all Claude CLI presets
+ * Creates the file with default presets if it doesn't exist.
+ * @returns {Promise<Array>} Array of preset objects
+ */
+export async function readPresets() {
+    const presetsPath = getPresetsPath();
+    try {
+        const content = await fs.readFile(presetsPath, 'utf8');
+        if (!content.trim()) return DEFAULT_PRESETS;
+        return JSON.parse(content);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            // Create with defaults
+            try {
+                await fs.mkdir(path.dirname(presetsPath), { recursive: true });
+                await fs.writeFile(presetsPath, JSON.stringify(DEFAULT_PRESETS, null, 2), 'utf8');
+                logger.info(`[ClaudePresets] Created presets file with defaults at ${presetsPath}`);
+            } catch (writeError) {
+                logger.warn(`[ClaudePresets] Could not create presets file: ${writeError.message}`);
+            }
+            return DEFAULT_PRESETS;
+        }
+        if (error instanceof SyntaxError) {
+            logger.error(`[ClaudePresets] Invalid JSON in presets at ${presetsPath}. Returning defaults.`);
+            return DEFAULT_PRESETS;
+        }
+        logger.error(`[ClaudePresets] Failed to read presets at ${presetsPath}:`, error.message);
+        throw error;
+    }
+}
+
+/**
+ * Save a preset (add or update)
+ * @param {string} name - Preset name
+ * @param {Object} config - Environment variables to save
+ * @returns {Promise<Array>} Updated array of presets
+ */
+export async function savePreset(name, config) {
+    const presetsPath = getPresetsPath();
+    let presets = await readPresets();
+
+    const existingIndex = presets.findIndex(p => p.name === name);
+    const newPreset = { name, config: { ...config } };
+
+    if (existingIndex >= 0) {
+        presets[existingIndex] = newPreset;
+        logger.info(`[ClaudePresets] Updated preset: ${name}`);
+    } else {
+        presets.push(newPreset);
+        logger.info(`[ClaudePresets] Created preset: ${name}`);
+    }
+
+    try {
+        await fs.mkdir(path.dirname(presetsPath), { recursive: true });
+        await fs.writeFile(presetsPath, JSON.stringify(presets, null, 2), 'utf8');
+    } catch (error) {
+        logger.error(`[ClaudePresets] Failed to save preset:`, error.message);
+        throw error;
+    }
+
+    return presets;
+}
+
+/**
+ * Delete a preset by name
+ * @param {string} name - Preset name to delete
+ * @returns {Promise<Array>} Updated array of presets
+ */
+export async function deletePreset(name) {
+    const presetsPath = getPresetsPath();
+    let presets = await readPresets();
+
+    const originalLength = presets.length;
+    presets = presets.filter(p => p.name !== name);
+
+    if (presets.length === originalLength) {
+        logger.warn(`[ClaudePresets] Preset not found: ${name}`);
+        return presets;
+    }
+
+    try {
+        await fs.writeFile(presetsPath, JSON.stringify(presets, null, 2), 'utf8');
+        logger.info(`[ClaudePresets] Deleted preset: ${name}`);
+    } catch (error) {
+        logger.error(`[ClaudePresets] Failed to delete preset:`, error.message);
+        throw error;
+    }
+
+    return presets;
+}
